@@ -1,7 +1,7 @@
 -- 1. Create Users (Password: password123 encoded via BCrypt)
-INSERT INTO users (email, password, nickname, created_at, updated_at) VALUES 
-('demo_user@test.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRkgVduVhz.yYUfliNpYR2h0S9e', 'DemoUser', NOW(), NOW()),
-('browser_user@test.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRkgVduVhz.yYUfliNpYR2h0S9e', 'BrowserUser', NOW(), NOW());
+INSERT INTO users (email, password, nickname, created_at) VALUES 
+('demo_user@test.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRkgVduVhz.yYUfliNpYR2h0S9e', 'DemoUser', NOW()),
+('browser_user@test.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRkgVduVhz.yYUfliNpYR2h0S9e', 'BrowserUser', NOW());
 
 -- 2. Board table does not exist in Entity (it is just a logical ID 1), so skip inserting into board.
 

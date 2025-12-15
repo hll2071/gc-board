@@ -3,7 +3,7 @@ let lastArticleId = null;
 let isLoading = false;
 let hasMore = true;
 const PAGE_SIZE = 10;
-const BOARD_ID = 1; // Default board ID
+const BOARD_ID = 1;
 
 // DOM Elements
 const galleryGrid = document.getElementById('gallery-grid');
@@ -18,13 +18,6 @@ const writeBtn = document.getElementById('write-btn');
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
 const logoutBtn = document.getElementById('logout-btn');
-const closeBtn = document.querySelector('.close-btn');
-const closeBtnDetail = document.querySelector('.close-btn-detail');
-
-// Forms
-const writeForm = document.getElementById('write-form');
-const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
 
 // Auth State
 const authButtons = document.getElementById('auth-buttons');
@@ -35,113 +28,136 @@ let isLoggedIn = false;
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('App initialized');
     checkLoginStatus();
     loadArticles();
     setupInfiniteScroll();
     setupEventListeners();
 });
 
+// Modal Helpers - Single source of truth
+function openModal(modal) {
+    if (modal) {
+        console.log(`Opening modal: ${modal.id}`);
+        modal.classList.remove('hidden');
+        // Force layout info
+        const displayStyle = window.getComputedStyle(modal).display;
+        console.log(`Modal ${modal.id} display style after open: ${displayStyle}`);
+
+        const form = modal.querySelector('form');
+        if (form) form.reset();
+    }
+}
+
+function closeModal(modal) {
+    if (modal) {
+        console.log(`Closing modal: ${modal.id}`);
+        modal.classList.add('hidden');
+    }
+}
+
+function closeAllModals() {
+    [writeModal, detailModal, loginModal, signupModal].forEach(closeModal);
+}
+
 function checkLoginStatus() {
     const nickname = localStorage.getItem('nickname');
     if (nickname) {
         isLoggedIn = true;
-        authButtons.classList.add('hidden');
-        userMenu.classList.remove('hidden');
-        userNickname.textContent = `Hello, ${nickname} `;
+        if (authButtons) authButtons.classList.add('hidden');
+        if (userMenu) userMenu.classList.remove('hidden');
+        if (userNickname) userNickname.textContent = `Hello, ${nickname} `;
     } else {
         isLoggedIn = false;
-        authButtons.classList.remove('hidden');
-        userMenu.classList.add('hidden');
+        if (authButtons) authButtons.classList.remove('hidden');
+        if (userMenu) userMenu.classList.add('hidden');
     }
 }
 
-// Event Listeners
 function setupEventListeners() {
-    // Modals
-    if (writeBtn) writeBtn.addEventListener('click', () => writeModal.classList.remove('hidden'));
-    loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
-    signupBtn.addEventListener('click', () => signupModal.classList.remove('hidden'));
+    if (writeBtn) writeBtn.addEventListener('click', () => openModal(writeModal));
+    if (loginBtn) loginBtn.addEventListener('click', () => openModal(loginModal));
+    if (signupBtn) signupBtn.addEventListener('click', () => openModal(signupModal));
 
-    // Close Buttons
-    document.querySelectorAll('.close-btn, .close-btn-detail, .close-btn-login, .close-btn-signup').forEach(btn => {
-        btn.addEventListener('click', () => {
-            writeModal.classList.add('hidden');
-            detailModal.classList.add('hidden');
-            loginModal.classList.add('hidden');
-            signupModal.classList.add('hidden');
-        });
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.close-btn, .close-btn-detail, .close-btn-login, .close-btn-signup') || e.target.classList.contains('modal')) {
+            closeAllModals();
+        }
     });
 
-    // Logout
-    logoutBtn.addEventListener('click', handleLogout);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
-    // Forms
-    writeForm.addEventListener('submit', handlePostSubmit);
-    loginForm.addEventListener('submit', handleLogin);
-    signupForm.addEventListener('submit', handleSignup);
+    const writeForm = document.getElementById('write-form');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+
+    if (writeForm) writeForm.addEventListener('submit', handlePostSubmit);
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (signupForm) signupForm.addEventListener('submit', handleSignup);
 }
 
 // Auth Functions
 async function handleSignup(e) {
     e.preventDefault();
+    console.log('Handling signup...');
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
     const nickname = document.getElementById('signup-nickname').value;
 
     try {
-        const response = await fetch(`${API_BASE} /auth/signup`, {
+        const response = await fetch(`${API_BASE}/auth/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, nickname })
         });
 
         if (response.ok) {
-            alert('Signup successful! Please login.');
-            signupModal.classList.add('hidden');
-            loginModal.classList.remove('hidden');
+            console.log('Signup successful');
+            closeModal(signupModal);
+            openModal(loginModal);
         } else {
+            console.error('Signup failed', response.status);
             alert('Signup failed.');
         }
     } catch (error) {
-        console.error(error);
+        console.error('Signup error', error);
         alert('Error signing up.');
     }
 }
 
 async function handleLogin(e) {
     e.preventDefault();
+    console.log('Handling login...');
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
     try {
-        const response = await fetch(`${API_BASE} /auth/login`, {
+        const response = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
 
         if (response.ok) {
-            // In a real app, we would get user info from response. 
-            // Here we just simulate by saving email as nickname for demo if not returned
-            // But let's assume login is strictly session based.
-            // We will store a flag.
+            console.log('Login successful');
             localStorage.setItem('nickname', email.split('@')[0]);
             checkLoginStatus();
-            loginModal.classList.add('hidden');
+            closeModal(loginModal);
         } else {
-            alert('Login failed.');
+            console.error('Login failed', response.status);
+            alert('Login failed. Check credentials.');
         }
     } catch (error) {
-        console.error(error);
+        console.error('Login error', error);
         alert('Error logging in.');
     }
 }
 
 async function handleLogout() {
-    await fetch(`${API_BASE} /auth/logout`, { method: 'POST' });
+    await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
     localStorage.removeItem('nickname');
     checkLoginStatus();
-    window.location.reload();
+    loadArticles();
 }
 
 // Infinite Scroll
@@ -152,7 +168,7 @@ function setupInfiniteScroll() {
         }
     }, { threshold: 0.5 });
 
-    observer.observe(loadingTrigger);
+    if (loadingTrigger) observer.observe(loadingTrigger);
 }
 
 // Load Articles
@@ -166,12 +182,18 @@ async function loadArticles() {
             url += `&lastArticleId=${lastArticleId}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url); // GET requests send cookies by default usually, but let's be safe if needed
+        // For GET, standard fetch usually handles cookies fine on same-origin.
+
+        if (!response.ok) {
+            throw new Error(`Failed to load articles: ${response.status}`);
+        }
+
         const articles = await response.json();
 
         if (articles.length < PAGE_SIZE) {
             hasMore = false;
-            loadingTrigger.style.display = 'none';
+            if (loadingTrigger) loadingTrigger.style.display = 'none';
         }
 
         if (articles.length > 0) {
@@ -179,7 +201,7 @@ async function loadArticles() {
             renderArticles(articles);
         }
     } catch (error) {
-        console.error('Failed to load articles:', error);
+        console.error(error);
     } finally {
         isLoading = false;
     }
@@ -204,6 +226,7 @@ function renderArticles(articles) {
 // Create Post
 async function handlePostSubmit(e) {
     e.preventDefault();
+    console.log('Handling post submit...');
     if (!isLoggedIn) {
         alert('Please login first.');
         return;
@@ -214,6 +237,7 @@ async function handlePostSubmit(e) {
     const imageUrl = document.getElementById('imageUrl').value;
 
     try {
+        console.log('Sending post request...');
         const response = await fetch(`${API_BASE}/articles`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -221,24 +245,25 @@ async function handlePostSubmit(e) {
                 title,
                 content,
                 imageUrl,
-                boardId: BOARD_ID,
-                // writerId is handled by session in backend
+                boardId: BOARD_ID
             })
         });
 
         if (response.ok) {
-            writeModal.classList.add('hidden');
-            writeForm.reset();
+            console.log('Post created successfully');
+            closeModal(writeModal);
             // Reset and reload
             galleryGrid.innerHTML = '';
             lastArticleId = null;
             hasMore = true;
-            loadingTrigger.style.display = 'block';
+            if (loadingTrigger) loadingTrigger.style.display = 'block';
             loadArticles();
         } else {
-            alert('Failed to create post. Are you logged in?');
+            console.error('Post creation failed', response.status);
+            alert('Failed to create post. Status: ' + response.status);
         }
     } catch (error) {
+        console.error('Post creation error', error);
         alert('Failed to create post');
     }
 }
@@ -258,11 +283,10 @@ async function openDetail(articleId) {
 
         loadComments(articleId);
 
-        // Setup comment form
         const commentForm = document.getElementById('comment-form');
         commentForm.onsubmit = (e) => handleCommentSubmit(e, articleId);
 
-        detailModal.classList.remove('hidden');
+        openModal(detailModal);
     } catch (error) {
         console.error(error);
     }
@@ -286,7 +310,7 @@ function renderComments(comments, container, articleId) {
     comments.forEach(comment => {
         const div = document.createElement('div');
         div.className = 'comment-item';
-        div.style.marginLeft = `${(comment.path.length / 5 - 1) * 20}px`; // Indent based on depth
+        div.style.marginLeft = `${(comment.path.length / 5 - 1) * 20}px`;
 
         if (comment.deleted) {
             div.innerHTML = `<div class="comment-content" style="color:#666;">(Deleted Comment)</div>`;
@@ -342,7 +366,6 @@ async function postComment(articleId, content, parentPath) {
         body: JSON.stringify({
             content,
             articleId,
-            // writerId handled by session
             parentPath
         })
     });

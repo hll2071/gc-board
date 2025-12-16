@@ -1,12 +1,15 @@
 package com.example.gcsuhang.comment.service.response;
 
 import com.example.gcsuhang.comment.entity.Comment;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Getter
 public class CommentResponse {
+    @JsonSerialize(using = ToStringSerializer.class)
     private final Long id;
     private final String content;
     private final Long articleId;

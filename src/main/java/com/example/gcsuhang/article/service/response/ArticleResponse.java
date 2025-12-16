@@ -1,12 +1,15 @@
 package com.example.gcsuhang.article.service.response;
 
 import com.example.gcsuhang.article.entity.Article;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Getter
 public class ArticleResponse {
+    @JsonSerialize(using = ToStringSerializer.class)
     private final Long id;
     private final String title;
     private final String content;

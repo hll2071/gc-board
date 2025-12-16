@@ -386,15 +386,28 @@ window.submitReply = async (articleId, commentId, parentPath) => {
 }
 
 async function postComment(articleId, content, parentPath) {
-    await fetch(`${API_BASE}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            content,
-            articleId,
-            parentPath
-        })
-    });
+    try {
+        const response = await fetch(`${API_BASE}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content,
+                articleId,
+                parentPath
+            })
+        });
+
+        if (!response.ok) {
+            console.error('Post comment failed:', response.status);
+            const errorText = await response.text();
+            alert(`Failed to post comment. Status: ${response.status}\n${errorText}`);
+            throw new Error('Post comment failed');
+        }
+    } catch (error) {
+        console.error('Post comment error:', error);
+        alert('Error posting comment: ' + error.message);
+        throw error; // Re-throw so caller knows
+    }
 }
 
 window.deleteComment = async (commentId, articleId) => {

@@ -277,7 +277,10 @@ async function openDetail(articleId) {
         const detailContent = document.getElementById('detail-content');
         detailContent.innerHTML = `
             <img src="${article.imageUrl}" style="width:100%; border-radius:8px; margin-bottom:20px;">
-            <h2>${article.title}</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>${article.title}</h2>
+                <button class="btn-secondary" onclick="deleteArticle('${article.id}')" style="background:#ff4d4d; border:none;">Delete Article</button>
+            </div>
             <p style="color:#ccc; margin-bottom:20px;">${article.content}</p>
         `;
 
@@ -289,6 +292,28 @@ async function openDetail(articleId) {
         openModal(detailModal);
     } catch (error) {
         console.error(error);
+    }
+}
+
+async function deleteArticle(articleId) {
+    if (!confirm('Are you sure you want to delete this article?')) return;
+    try {
+        const response = await fetch(`${API_BASE}/articles/${articleId}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert('Article deleted.');
+            closeModal(detailModal);
+            // Reload grid
+            galleryGrid.innerHTML = '';
+            lastArticleId = null;
+            hasMore = true;
+            if (loadingTrigger) loadingTrigger.style.display = 'block';
+            loadArticles();
+        } else {
+            alert('Failed to delete article.');
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Error deleting article.');
     }
 }
 
@@ -315,11 +340,12 @@ function renderComments(comments, container, articleId) {
         if (comment.deleted) {
             div.innerHTML = `<div class="comment-content" style="color:#666;">(Deleted Comment)</div>`;
         } else {
+            // Using quoted IDs for onclick handlers to prevent JS precision loss
             div.innerHTML = `
                 <div class="comment-header">User ${comment.writerId}</div>
                 <div class="comment-content">${comment.content}</div>
-                <button class="reply-btn" onclick="showReplyForm(${comment.id}, '${comment.path}', ${articleId})">Reply</button>
-                <button class="delete-btn" onclick="deleteComment(${comment.id}, ${articleId})">Delete</button>
+                <button class="reply-btn" onclick="showReplyForm('${comment.id}', '${comment.path}', '${articleId}')">Reply</button>
+                <button class="delete-btn" onclick="deleteComment('${comment.id}', '${articleId}')">Delete</button>
                 <div id="reply-form-${comment.id}"></div>
             `;
         }
@@ -348,7 +374,7 @@ window.showReplyForm = (commentId, path, articleId) => {
     container.innerHTML = `
         <div class="reply-form">
             <input type="text" id="reply-input-${commentId}" placeholder="Write a reply...">
-            <button class="btn-secondary" onclick="submitReply(${articleId}, ${commentId}, '${path}')">Submit</button>
+            <button class="btn-secondary" onclick="submitReply('${articleId}', '${commentId}', '${path}')">Submit</button>
         </div>
     `;
 }

@@ -36,6 +36,12 @@ public class CommentService {
         String descendantsTopPath = commentRepository.findDescendantsTopPath(
                 request.getArticleId(), parentCommentPath.getPath()).orElse(null);
 
+        // Fix: If the top path found is the parent itself (no children exist), treat it
+        // as null
+        if (descendantsTopPath != null && descendantsTopPath.equals(parentCommentPath.getPath())) {
+            descendantsTopPath = null;
+        }
+
         String newPath = parentCommentPath.createChildCommentPath(descendantsTopPath);
 
         Comment comment = commentRepository.save(
